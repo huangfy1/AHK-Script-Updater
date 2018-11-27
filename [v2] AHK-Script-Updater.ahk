@@ -2,13 +2,18 @@
 #include D:\机动桌面\AHK_Updater-master\TaskDialog.ahk
 #NoEnv
 SetTitleMatchMode 2
-#SingleInstance force
+#Hotstring EndChars  ◎
+#Hotstring ? O Z ; # 热字串设置 c 区分大小写 o 删除停止符号 Z重置计数器 ?可以混在单词中
+#Hotstring NoMouse ; #让鼠标不打扰热字串触发(副作用是 "也阻止了热字串需要的鼠标钩子")
+#Warn ClassOverwrite ;#类覆盖警告
+#SingleInstance force ; #允许脚本的多个实例运行。 会跳过对话框并自动替换旧实例, 效果类似于 Reload 命令.。
+;# 更改脚本的工作目录到"脚本所在目录的绝对路径"
 SetWorkingDir %A_ScriptDir%
 FileEncoding , UTF-8
+;~ SetFormat,Float,0.2 ; # 设置数值转字符串的字符串格式
+SendMode Input ;#Input: 让 Send, SendRaw, Click 和 MouseMove/Click/Drag 切换到 SendInput 方法.
 
-;---------------------------------------------------------------------- 
-
-
+;~ Local_Version
 FileRead, Local_Version, Version.ini
 if (ErrorLevel){
 MsgBox,16,升级出错,未发现本地版本文件Version.ini
@@ -18,7 +23,6 @@ ExitApp
 
 
 Local_Version=0.5
-
 Local_Version:=Trim(Local_Version," `t`r`n`f`a`v`b")
 
 DownloadURL:="https://raw.githubusercontent.com/Oilj/AHK-Script-Updater/master/AHK-Script-Updater.ahk"

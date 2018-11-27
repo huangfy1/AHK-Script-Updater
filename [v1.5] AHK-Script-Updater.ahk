@@ -1,31 +1,23 @@
-﻿;~ #Warn
-#include D:\机动桌面\AHK_Updater-master\TaskDialog.ahk
+﻿#Warn
 #NoEnv
 SetTitleMatchMode 2
-#SingleInstance force
+#Hotstring EndChars  ◎
+#Hotstring ? O Z ; # 热字串设置 c 区分大小写 o 删除停止符号 Z重置计数器 ?可以混在单词中
+#Hotstring NoMouse ; #让鼠标不打扰热字串触发(副作用是 "也阻止了热字串需要的鼠标钩子")
+#Warn ClassOverwrite ;#类覆盖警告
+#SingleInstance force ; #允许脚本的多个实例运行。 会跳过对话框并自动替换旧实例, 效果类似于 Reload 命令.。
+;# 更改脚本的工作目录到"脚本所在目录的绝对路径"
 SetWorkingDir %A_ScriptDir%
 FileEncoding , UTF-8
+SetFormat,Float,0.2 ; # 设置数值转字符串的字符串格式
+SendMode Input ;#Input: 让 Send, SendRaw, Click 和 MouseMove/Click/Drag 切换到 SendInput 方法.
 
-;---------------------------------------------------------------------- 
-
-
-FileRead, Local_Version, Version.ini
-if (ErrorLevel){
-MsgBox,16,升级出错,未发现本地版本文件Version.ini
-ExitApp
-}
-
-
-
-Local_Version=0.5
-
-Local_Version:=Trim(Local_Version," `t`r`n`f`a`v`b")
-
+Local_Version:=0.5
 DownloadURL:="https://raw.githubusercontent.com/Oilj/AHK-Script-Updater/master/AHK-Script-Updater.ahk"
 WikiURL:="https://github.com/Oilj/AHK-Script-Updater/wiki"
-Last_VersionURL:="https://raw.githubusercontent.com/Oilj/AHK-Script-Updater/master/Version.txt"
+Last_VersionURL:="https://raw.githubusercontent.com/Oilj/AHK-Script-Updater/master/Version.ini"
 
-GitHubUpdate("Default")
+CheckUpdate_Main(Local_Version,Last_VersionURL,DownloadURL,WikiURL)
 
 return ;# 自动执行段结束
 
@@ -45,15 +37,13 @@ Contents := whr.ResponseText
 	If Not ErrorLevel
 	{
 		Latest_Version := Contents
+; 回收内存
+		Contents =
 	}
-;去除空白符
-	Latest_Version:=RegExReplace(Latest_Version,"\s","")
-
+	
 ; 如果有新版本
-
-
-	If (Local_Version<Latest_Version){
-/*
+	If ( Local_Version < Latest_Version )
+	{
 		iButtonID := TaskDialog(
 							+0,  ;参数1
 		
@@ -68,14 +58,11 @@ Contents := whr.ResponseText
 							+0x10,  ;参数4
 							
 							+"GREY") ;参数5
-*/
-							
-				iButtonID := TaskDialog(0, "软件升级||发现新版本" . "||本地版本 v" Local_Version, "自动下载并更新到 v" Latest_Version . "`n点击立即更新" . "|手动下载最新版本 v" Latest_Version . "`n点击打开网站"  . "|查看更新信息`n点击打开网站" . "|退出`nExit", 0x10, "GREY")
 							
 		If ( iButtonID == 1001 )
 		{
 			;运行自动更新程序 
-		updateMain()
+		GitHubUpdate(DownloadURL,"",false)
 		}							
 
 		If ( iButtonID == 1002 )
@@ -97,7 +84,7 @@ Contents := whr.ResponseText
 	Else If ( Local_Version >= Latest_Version )
 	{
 		iButtonID := TaskDialog("", "升级||本地软件已是最新版."
-							. "`n||本地版本 v" Local_Version "`n最新版本 v" Latest_Version, "退出 Exit", 0x10, "GREEN")
+							. "`n||本地版本 " Local_Version "`n最新版本 " Latest_Version, "退出 Exit", 0x10, "GREEN")
 							
 		; custom button 1 - set to close
 		If ( iButtonID == 1001 )
@@ -116,10 +103,6 @@ GitHubUpdate(URL,UpdateTempDir:="",CheckUpdateBeforeStarting:=true,TextCompatMod
     
 global
 
-if (URL="Default"){
-
-}
-	
 UpdateStart=%1% ; 命令行参数
 SrcPath=%2% ; 命令行参数
 
@@ -134,27 +117,19 @@ UpdateTempDir:=A_ProgramFiles "\AHK_Update"
 UpdateTempFilePath:=UpdateTempDir "\UpdateFile.ahk"
 
 ; 绑定函数对象
-;~ F_updateMain:=Func("updateMain").Bind(UpdateTempDir)
-F_CheckUpdate_Main:=Func("CheckUpdate_Main").Bind(Local_Version,Last_VersionURL,DownloadURL,WikiURL)
+F_updateMain:=Func("updateMain").Bind(UpdateTempDir)
+
 ; 注册升级菜单
-;~ Menu,tray,add,%_Update%,% F_updateMain
-Menu,tray,add,%_Update%,% F_CheckUpdate_Main
+Menu,tray,add,%_Update%,% F_updateMain
 
 ; 如果发现需要升级,那么就下载文件,并且将源文件替换
 
 if (UpdateStart=="update"){
     
 	MsgBox,已接到升级指令`r`n按下确定即从GitHub下载更新文件
-    
-try{  
-    FileDelete, % UpdateTempFilePath
-    }
-catch ex{
-	
-}
 
 	try{
-                MsgBox,% URL
+                ;~ MsgBox,% UpdateTempFilePath
                 
 		TextContainingChieseUpDate(URL,UpdateTempFilePath)
 
@@ -185,13 +160,9 @@ else if (%1%=="UpdateFinish"){
 
 
 ; 升级的main函数(目的就是把程序发到另一个地方,并且运行传入参数,开启升级模式)
-updateMain(UpdateTempDir:=""){
+updateMain(UpdateTempDir){
     
 local
-
-; 升级的临时目录
-if (UpdateTempDir="")
-UpdateTempDir:=A_ProgramFiles "\AHK_Update"
 
 ; 删除临时目录
 	try{
