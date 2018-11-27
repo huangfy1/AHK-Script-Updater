@@ -1,17 +1,14 @@
-﻿#NoEnv
+﻿;~ #Warn
+#include D:\机动桌面\AHK_Updater-master\TaskDialog.ahk
+#NoEnv
 SetTitleMatchMode 2
-#Hotstring EndChars  ◎
-#Hotstring ? O Z
-#Hotstring NoMouse
-#SingleInstance force 
+#SingleInstance force
 SetWorkingDir %A_ScriptDir%
 FileEncoding , UTF-8
-SendMode Input
-#Include %A_ScriptDir%\TaskDialog.ahk
 
 ;---------------------------------------------------------------------- 
 
-;~ Local_Version
+
 FileRead, Local_Version, Version.ini
 if (ErrorLevel){
 MsgBox,16,升级出错,未发现本地版本文件Version.ini
@@ -21,6 +18,7 @@ ExitApp
 
 
 Local_Version=0.5
+
 Local_Version:=Trim(Local_Version," `t`r`n`f`a`v`b")
 
 DownloadURL:="https://raw.githubusercontent.com/Oilj/AHK-Script-Updater/master/AHK-Script-Updater.ahk"
@@ -254,9 +252,6 @@ return
 return
 
 
-;---------------------------------------------------------------------- 
-
-
 ; #设置重启当前脚本的热字串 ;rl
 #If WinActive(A_ScriptName)
 ;###保存并重启当前脚本
@@ -276,5 +271,3 @@ return
 	}
 return
 #If
-
-;---------------------------------------------------------------------- 
