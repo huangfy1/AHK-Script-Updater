@@ -8,49 +8,91 @@ FileEncoding , UTF-8
 
 #Include %A_ScriptDir%\TaskDialog.ahk ;导入用户更新选择器(GUI)
 #Include %A_ScriptDir%\lib\DownloadFileWithProgressBar.ahk ;导入下载器(GUI)
-#Include %A_ScriptDir%\ce.ahk ;导入下载器(GUI)
+#Include %A_ScriptDir%\lib\Wait.ahk ;导入等待时的假进度条(GUI)
 
-/*[后期作为命令行传入方法] 
-;--------------------------------------------------------------------- 
-;参数接收区域
-
-	;必填参数
-
-		;启动字符串(必填)
-		FristParaMeter=%1%
-			;接收到"Update"启动更新程序(不区分大小写),参数未传入,或接收到其他任何字符串,程序立即终止退出
-			if !(FristParaMeter="Update")
-				ExitApp
-		;请求者自身路径(必填)
-		SoftPath=%2%
-			;收到参数之后会先检查格式
-			if !(RegExMatch(SoftPath,"^[a-zA-Z]:(//[^///:""<>/|]+)+$"))
-				ExitApp
-	
-			;自动生成请求软件的根目录
-			SoftDir
-	
-		;更新文件下载地址(必填)
-		DownLoadURL=%3%
-	
-	
-	;非必填参数
-	
-		;版本文件下载地址(默认是同GitHub目录下的Version.txt文件)
-		Last_VersionURL=%4%
-		
-	;当前版本(如果输入纯数字,版本就是参数,如果并非纯数字,那么认为是和SoftPath同路径的版本文件的文件名)(默认参数是"Version.txt")
-	Local_Version=%5%
-	
-	;更新临时文件地址(默认是原软件根目录下的%SoftDir%\CacheFile文件)
-	TempFilePath=%6%
-	
 ;---------------------------------------------------------------------- 
-*/
+;建立配置文件的文件对象,如果不存在,则file为0
+iniFile := FileOpen("AHKScriptUpdater.ini", "r")
+if (iniFile=0){
+	
+	;如果不存在则建立配置文件"AHKScriptUpdater.ini"
+BuildConfig("AHKScriptUpdater.ini")
 
-;参数接收区域
+	MsgBox,% 16+4,未找到配置文件,% "未能在软件根目录下找到配置文件 AHKScriptUpdater.ini" . "`r`n已在根目录下生成`r`n请完善相关参数之后再启动`r`n按下""是"",打开配置文件"
+	
+	IfMsgBox,Yes
+		Run,AHKScriptUpdater.ini
+	
+	ExitApp
+}
 
-	;必填参数
+;如果没有发现配置文件，那么程序就会退出,如果没有退出的话，那就继续检查是否存在标签[Config] 
+	;检查配置文件大小,如果超过1MB则不读取,防止程序假死
+	if (iniFile.Length>1048576){
+	MsgBox,% 16+4,配置文件大小异常,% "配置文件大小超过1MB" . "`r`n请检查 AHKScriptUpdater.ini 是否为标准的配置文件" . "按下""是"",建立一个标准配置文件demo,并且打开"
+		IfMsgBox,Yes
+		{
+		BuildConfig("AHKScriptUpdater_Demo.ini")
+		Run,AHKScriptUpdater_Demo.ini
+		}
+
+	ExitApp
+	}
+	
+	;如果在正常范围之内则检查 Config 段名是否存在
+	if !(InStr(iniFile.Read(),"[Config]")){
+	MsgBox,% 16+4,配置文件段名异常,% "配置中没有发现 Config 段名" . "`r`n请检查 AHKScriptUpdater.ini 是否为标准的配置文件" . "按下""是"",建立一个标准配置文件demo,并且打开"
+			IfMsgBox,Yes
+		{
+		BuildConfig("AHKScriptUpdater_Demo.ini")
+		Run,AHKScriptUpdater_Demo.ini
+		}
+		
+	ExitApp
+	}
+;config格式检查流程完毕,检查完成之后确保AHKScriptUpdater.ini存在,并且含有config段名
+;---------------------------------------------------------------------- 
+
+;# 读取配置
+;## 必填参数
+
+	;启动字符串(必填)
+IniRead,FristParaMeter,AHKScriptUpdater.ini,Config,FristParaMeter ,% ""
+	;请求者自身路径(必填) 
+IniRead,SoftPath,AHKScriptUpdater.ini,Config,SoftPath,% ""
+	;更新文件下载地址(必填)
+IniRead,DownLoadURL,AHKScriptUpdater.ini,Config,DownLoadURL,% ""
+
+;## 检查必填参数
+s:=""
+c:=0
+if (FristParaMeter="")
+	s.="FristParaMeter ",c++
+if (SoftPath="")
+	s.="SoftPath ",c++
+if (DownLoadURL="")
+	s.="DownLoadURL ",c++
+;如果c不为0,那么说明必填参数有问题
+if (c){
+	MsgBox,% 16,配置文件中必填参数异常,% "配置文件中的" c "个必填参数" s "未填写"
+ExitAPP
+}
+
+;---------------------------------------------------------------------- 
+
+
+;## 非必填参数
+
+	;版本文件下载地址(默认是在更新文件下载地址同目录下的Version.txt文件)
+IniRead,Last_VersionURL,AHKScriptUpdater.ini, Config,Last_VersionURL ,% ""
+	;当前版本号或地址
+		;如果是由"数字和零或一个半角英文逗号(‘.’)"组成的字符串,则被直接看做版本号,否则会被看为本地版本文件路径
+IniRead,Local_Version,AHKScriptUpdater.ini,Config,Local_Version ,% ""
+	;更新临时文件地址(默认是原软件根目录下的%SoftDir%\CacheFile文件)
+IniRead,TempFilePath,AHKScriptUpdater.ini,Config,TempFilePath,% ""
+
+	;更新说明地址(如果不填,则不在用户选择框中显示)
+IniRead,WikiURL,AHKScriptUpdater.ini,Config,WikiURL ,% ""
 
 		;启动字符串(必填)√
 		FristParaMeter:="Update"
@@ -110,10 +152,33 @@ TrayTip,%A_ScriptName% 提醒,启动字符串错误，程序已退出
 	WikiURL:="https://github.com/Oilj/OnlyTest/wiki"
 println(Local_Version),println(Last_VersionURL),println(DownloadURL),println(WikiURL)
 
+;---------------------------------------------------------------------- 
+
 	;运行更新程序(该函数内变量为Globol模式)
 Main_Updater(DownLoadURL,SoftPath,"",EnableCheckUpdate:=true,EnableBackup:=true,RunAfterUpdate:=true,UpdateVersionFile:=true)
 
 return ;# 自动执行段结束
+;---------------------------------------------------------------------- 
+BuildConfig(FileName:="AHKScriptUpdater.ini"){
+	local
+;# 如果不存在的话 那么就写入一个新的配置 
+	;生成字符串
+Pairs= ;! 这个是不能包含空行的
+(
+;必填参数
+FristParaMeter=Update
+SoftPath=
+DownLoadURL=
+;非必填参数
+Last_VersionURL=
+Local_Version=
+TempFilePath=
+WikiURL=
+)
+	;在Config标签下,写入配置
+IniWrite, %Pairs%,%FileName%, Config
+}
+
 ;---------------------------------------------------------------------- 
 
 Main_Updater(DownLoadURL,SoftPath,TempFilePath:="",EnableCheckUpdate:=true,EnableBackup:=true,RunAfterUpdate:=true,UpdateVersionFile:=false){
@@ -174,6 +239,17 @@ if (RunAfterUpdate){
 ;---------------------------------------------------------------------- 
 println(text){
 	local
+/*
+	刚刚接触COM组件调用相关的内容,感觉到非常困惑,网上的相关资料也不多
+	比如说这个最简单的案例
+	是怎么知道SciTE的COM组件名是"SciTE4AHK.Application"的呢?
+	又是怎么知道它里面有一个方法叫做"Output"?
+	
+	大概查了一些资料，基本上对这上面的东西有了一点认识
+	COM组件的信息是被放在注册表中的,当然具体怎么查询还搞不太清楚,感觉这方面的网上教程比较少，好像大多数的内容都在书里
+	COM组件是一种设计的规范,是对调用者透明的,好像是有一个文件里面会讲到调用方法,找到之后先阅读这个文件，然后再调用
+*/
+	
 	oSciTE:= ComObjActive("SciTE4AHK.Application")
 	oSciTE.Output(text "`r`n")
 	return
