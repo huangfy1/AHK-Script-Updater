@@ -54,7 +54,8 @@ BuildConfig("AHKScriptUpdater.ini")
 ;---------------------------------------------------------------------- 
 
 ;# 读取配置
-;## 必填参数
+
+;## 必填参数 √
 
 	;启动字符串(必填)
 IniRead,FristParaMeter,AHKScriptUpdater.ini,Config,FristParaMeter ,% ""
@@ -83,74 +84,73 @@ ExitAPP
 
 ;## 非必填参数
 
-	;版本文件下载地址(默认是在更新文件下载地址同目录下的Version.txt文件)
+;---------------------------------------------------------------------- 
+
+	;版本文件下载地址
+		;从配置文件读取
 IniRead,Last_VersionURL,AHKScriptUpdater.ini, Config,Last_VersionURL ,% ""
+		;默认:在更新文件下载地址同目录下的Version.txt文件
+			; 如果值为空字串,提取文件更新URL根目录
+			if (Last_VersionURL=""){
+				Last_VersionURL:=FilePathSplit(DownLoadURL)[1] . "\Version.txt" 
+				println(Last_VersionURL)
+			}
+			;如果不为空,假设用户输入了文件的下载地址,故不做任何处理
+
+}
+
+;---------------------------------------------------------------------- 
+
 	;当前版本号或地址
-		;如果是由"数字和零或一个半角英文逗号(‘.’)"组成的字符串,则被直接看做版本号,否则会被看为本地版本文件路径
-IniRead,Local_Version,AHKScriptUpdater.ini,Config,Local_Version ,% ""
+		;如果是默认,那么假设本地地址存在于请求文件的根目录下的Version.txt文件
+		;如果用户填入数据上,则先做判断
+			;是由"数字和零或一个半角英文逗号(‘.’)"组成的字符串,则被直接看做版本号,否则会被看为本地版本文件路径
+IniRead,LocalVersion,AHKScriptUpdater.ini,Config,LocalVersion ,% ""
+		;默认:请求文件的根目录下的Version.txt文件
+			; 如果值为空字串,请求文件的根目录
+			nf:="" ;用于后期检测"数字"使用,这里提前声明
+			if (LocalVersion=""){
+				LocalVersion:=FilePathSplit(SoftPath)[1] . "\Version.txt" 
+				println(LocalVersion)
+			}
+
+		;非默认:检查是否为"版本号"(由多个数字和一个.组成的字符串)
+		else { 
+			RegExMatch(LocalVersion,"^(-?\d+)(\.\d+)?$",nf)
+		}
+		
+		 ;如果发现确实属于数字,那么不处理,如果不是那么读取文件到变量
+		 
+			if(LocalVersion!=nf){
+			;读取版本文件到变量
+			LocalVersionPath:=LocalVersion
+			FileRead, LocalVersion, %LocalVersionPath%							
+			}
+				
+	;Trim掉各种空白符
+	LocalVersion:=Trim(LocalVersion," `t`r`n`f`a`v`b")
+	
+;---------------------------------------------------------------------- 
+
 	;更新临时文件地址(默认是原软件根目录下的%SoftDir%\CacheFile文件)
 IniRead,TempFilePath,AHKScriptUpdater.ini,Config,TempFilePath,% ""
+
+;---------------------------------------------------------------------- 
 
 	;更新说明地址(如果不填,则不在用户选择框中显示)
 IniRead,WikiURL,AHKScriptUpdater.ini,Config,WikiURL ,% ""
 
-		;启动字符串(必填)√
-		FristParaMeter:="Update"
-			;接收到"Update"启动更新程序(不区分大小写),参数未传入,或接收到其他任何字符串,程序立即终止退出
-			if (FristParaMeter!="Update"){
-TrayTip,%A_ScriptName% 提醒,启动字符串错误，程序已退出
-			ExitApp
-			}
+;---------------------------------------------------------------------- 
 
-		;请求者自身路径(必填) √
-		SoftPath:="D:\GitHub\OnlyTest\DoTestScript.ahk"
-			;本来想用正则检查的,现在感觉其实没必要,在真正用的时候通过try来捕捉错误就行了(毕竟AHK会替我们检查)
-	
-			;自动生成请求软件的根目录 √
-			SoftDir:="null"
-			FoundPos_0 := InStr(SoftPath, "/" ,false,0,1)
-			FoundPos_1 := InStr(SoftPath, "\" ,false,0,1)
-				;找到最后一个斜杠的位置
-			FoundPos:=(FoundPos_0>=FoundPos_1)?FoundPos_0:FoundPos_1
-				;提取出调用者本身的名字(前面带着斜杠),并且对可能存在的反斜杠转义
-			SoftName:=StrReplace(SubStr(SoftPath,FoundPos),"\","\\")
-				;使用正则替换掉调用者本身(使用正则仅仅替换掉最后一个被匹配的)
-			SoftDir:=RegExReplace(SoftPath,"(" SoftName ")$" )
-				;去除正反斜杠得到真正的SoftName
-			SoftName:=StrReplace((SoftName:=StrReplace(SoftName,"\","")),"/","")
+;## 自动生成参数
+
+
 			
-			
-	
-		;更新文件下载地址(必填)√
-		DownLoadURL:="https://raw.githubusercontent.com/Oilj/OnlyTest/master/DoTestScript.ahk"
-	
-	
-	;非必填参数
-	
-		;版本文件下载地址(默认是同GitHub目录下的Version.txt文件)
-		Last_VersionURL:="https://raw.githubusercontent.com/Oilj/OnlyTest/master/Version.txt"
-		
-	;当前版本
-	Local_Version:=0.5
-	;Trim掉各种空白符
-	Local_Version:=Trim(Local_Version," `t`r`n`f`a`v`b")
-	;使用正则检查"Local_Version"是否是纯数字(可以含‘.’)
-	FoundPos := RegExMatch(Local_Version,"([0-9]|\.)+" ,OutputVar,StartingPosition := 1)
-	
-		;如果输入纯数字,版本就是参数,如果并非纯数字,那么则认为是路径名
-		if (OutputVar!=Local_Version){
-		Local_VersionPath:=Local_Version
-		;读取版本文件到变量
-		FileRead, Local_Version, %Local_VersionPath%	
-}
 
+;---------------------------------------------------------------------- 
+;DeBug调试用
 
-	;更新临时文件地址(默认是原软件根目录下的%SoftDir%\CacheFile文件)
-	TempFilePath=%SoftDir%\CacheFile
-	
-	;更新说明地址
-	WikiURL:="https://github.com/Oilj/OnlyTest/wiki"
-println(Local_Version),println(Last_VersionURL),println(DownloadURL),println(WikiURL)
+println(LocalVersion),println(Last_VersionURL),println(DownloadURL),println(WikiURL)
 
 ;---------------------------------------------------------------------- 
 
@@ -171,7 +171,7 @@ SoftPath=
 DownLoadURL=
 ;非必填参数
 Last_VersionURL=
-Local_Version=
+LocalVersion=
 TempFilePath=
 WikiURL=
 )
@@ -197,7 +197,7 @@ D_Update:=Func("DownloadFileWithProgressBar").bind(DownLoadURL,TempFilePath,true
 ;检查是否"检查更新"
 if(EnableCheckUpdate){
 	;如果检查更新的话，那么就调用CheckUpdate方法,最后让用户根据自己的情况选择更新方法
-	CheckUpdate(Local_Version,Last_VersionURL,DownloadURL,D_Update,WikiURL)
+	CheckUpdate(LocalVersion,Last_VersionURL,DownloadURL,D_Update,WikiURL)
 }
 	;如果不检查更新的话，那么就直接下载即可
 else 
