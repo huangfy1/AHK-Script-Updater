@@ -5,8 +5,8 @@
 检查更新,并且弹出对话框询问用户的下一步操作
 
 # ParaMetersList	参数列表 :
-Local_Version 当前本地版本号(纯数字字符串)
-Last_VersionURL 新版本文件URL(纯数字文本文件)
+LocalVersion 当前本地版本号(纯数字字符串)
+LastVersionURL 新版本文件URL(纯数字文本文件)
 如果输入的内容不带有http,那么即认为输入的就版本本身而不是URL
 DownloadURL 新版本下载URL
 [D_Update]  当用户选择"自动更新"时触发的函数
@@ -38,12 +38,12 @@ https://pan.baidu.com/s/1EHeg3MhQm5MRPgIR-l928Q
 √ 质量合格 QS
 */
 
-CheckUpdate(Local_Version,Last_VersionURL,DownloadURL,D_Update:="null",WikiURL=""){
+CheckUpdate(LocalVersion,LastVersionURL,DownloadURL,D_Update:="null",WikiURL=""){
 
 	;假设全局本地模式
 	local
 	;版本号是全局的(便于更新完成之后写入)
-	global  Latest_Version
+	global  LatestVersion
 
 	;检查D_Update是否为对象
 	if !(IsObject(D_Update)){
@@ -54,47 +54,49 @@ CheckUpdate(Local_Version,Last_VersionURL,DownloadURL,D_Update:="null",WikiURL="
         ;提示正在连接服务器
           __UpdateProgressBar_o3()
 		  
-	;检查Last_VersionURL是否含有HTTP
-	if (InStr(Last_VersionURL,"http")){
+	;检查LastVersionURL是否含有HTTP
+	if (InStr(LastVersionURL,"http")){
 		;如果有就下载它到变量Contents
 		whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-		whr.Open("GET", Last_VersionURL, true)
+		whr.Open("GET", LastVersionURL, true)
 		whr.Send()
 		whr.WaitForResponse()
 		Contents := whr.ResponseText
         ;关闭正在连接服务器的提示
 		Progress,Off
-		; 如果下载成功就赋值给Latest_Version
-		if Not ErrorLevel{
-			Latest_Version := Contents
+		; 如果下载成功就赋值给LatestVersion
+		if (Contents!=""){
+			LatestVersion := Contents
 		}
 		else{
 			;如果下载失败就抛出异常
-			throw Exception("Version File Download Failed `r`n" . Last_VersionURL)
+			println("Is" Contents)
+			println("Is" LastVersionURL)
+			throw Exception("Version File Download Failed `r`n" . LastVersionURL)
 		}
 	}
 	;如果不含有HTTP,那么就直接作为版本号来使用
 	else{
-		Latest_Version := Last_VersionURL
+		LatestVersion := LastVersionURL
 	}
 
 	;对版本号,去除空白符
-	Latest_Version:=RegExReplace(Latest_Version,"\s","")
+	LatestVersion:=RegExReplace(LatestVersion,"\s","")
 
 	;----------------------------------------------------------------------
 
 	; 检查是否需要更新
 
-	if (Local_Version<Latest_Version){
+	if (LocalVersion<LatestVersion){
 		; 检查wiki是否存在,如果存不存在那么干脆就不显示该选项
 		if (wiki=""){
 			wiki:=-1
-			iButtonID := TaskDialog(0, "软件升级||发现新版本" . "||本地版本 v" Local_Version, "自动下载并更新到 v" Latest_Version . "`n点击立即更新" . "|手动下载最新版本 v" Latest_Version . "`n点击打开网站"  . "|退出`nExit", 0x10, "GREY")
+			iButtonID := TaskDialog(0, "软件升级||发现新版本" . "||本地版本 v" LocalVersion, "自动下载并更新到 v" LatestVersion . "`n点击立即更新" . "|手动下载最新版本 v" LatestVersion . "`n点击打开网站"  . "|退出`nExit", 0x10, "GREY")
 		}
 
 		else{
 			wiki:=0
-			iButtonID := TaskDialog(0, "软件升级||发现新版本" . "||本地版本 v" Local_Version, "自动下载并更新到 v" Latest_Version . "`n点击立即更新" . "|手动下载最新版本 v" Latest_Version . "`n点击打开网站"  . "|查看更新信息`n点击打开网站" . "|退出`nExit", 0x10, "GREY")
+			iButtonID := TaskDialog(0, "软件升级||发现新版本" . "||本地版本 v" LocalVersion, "自动下载并更新到 v" LatestVersion . "`n点击立即更新" . "|手动下载最新版本 v" LatestVersion . "`n点击打开网站"  . "|查看更新信息`n点击打开网站" . "|退出`nExit", 0x10, "GREY")
 		}
 
 
@@ -123,9 +125,9 @@ CheckUpdate(Local_Version,Last_VersionURL,DownloadURL,D_Update:="null",WikiURL="
 		}
 	}
 	; 如果已经是最新版
-	else if ( Local_Version >= Latest_Version ){
+	else if ( LocalVersion >= LatestVersion ){
 		iButtonID := TaskDialog("", "升级||本地软件已是最新版."
-		. "`n||本地版本 v" Local_Version "`n最新版本 v" Latest_Version, "退出 Exit", 0x10, "GREEN")
+		. "`n||本地版本 v" LocalVersion "  最新版本 v" LatestVersion, "退出 Exit", 0x10, "GREEN")
 
 		; custom button 1 - set to close
 		if ( iButtonID == 1001 ){

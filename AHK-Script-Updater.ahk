@@ -10,7 +10,6 @@ FileEncoding , UTF-8
 #Include %A_ScriptDir%\lib\DownloadFileWithProgressBar.ahk ;导入下载器(Gui)
 #Include %A_ScriptDir%\lib\Wait.ahk ;导入等待时的假进度条(Gui)
 ;----------------------------------------------------------------------
-
 ;# 命令行参数
 
 P1=%1% ;启动字符串
@@ -20,7 +19,6 @@ P3=%3% ;请求者自身路径
 ;# 检查Config是否存在,如果不存在,则发出提示或者生成Demo文件
 ; 如果命令行参数P1/P2均存在,则跳过Config检查步骤。(其中有一个不存在，那就必须要检查Config)
 if (P2="") OR (P1=""){
-
 
 ;建立配置文件的文件对象,如果不存在,则file为0
 iniFile := FileOpen("AHKScriptUpdater.ini", "r")
@@ -68,7 +66,6 @@ if !(InStr(iniFile.Read(),"[Config]")){
 ;---------------------------------------------------------------------- 
 
 ;# 读取配置
-
 ;----------------------------------------------------------------------
 
 ;## 必填参数 
@@ -93,14 +90,11 @@ else
 
 ;---------------------------------------------------------------------- 
 
-
 ;## 检查必填参数
 s:=""
 c:=0
 if (FristParaMeter="")
 	s.="FristParaMeter ",c++
-if (SoftPath="")
-	s.="SoftPath ",c++
 if (DownLoadURL="")
 	s.="DownLoadURL ",c++
 ;如果c不为0,那么说明必填参数有问题
@@ -108,46 +102,44 @@ if (c){
 	MsgBox,% 16,配置文件中必填参数异常,% "配置文件中的" c "个必填参数" s "未填写"
 	ExitApp
 }
-
 ;---------------------------------------------------------------------- 
+
+
+;## 非必填参数
+
+;请求者自身路径
+;默认为工作目录(升级程序根目录)exe/ahk文件,当目录下存在多个exe/ahk时报错
+;鉴于该参数的特殊性，可以通过命令行方式传入
+;如果命令行中未传入,那么从Config获取/或者使用默认配置
+if (P3=""){
+	IniRead,SoftPath,AHKScriptUpdater.ini,Config,SoftPath,% ""
+	if (SoftPath=""){
+		SoftPath:=GetAHKOrEXEFilePath()
+	}
+}
+else{
+	SoftPath=P3
+}
+
+println("SoftPath" . SoftPath)
+;----------------------------------------------------------------------
 
 ;## 自动生成参数
 SoftDir:=FilePathSplit(SoftPath)[1]
 SoftName:=FilePathSplit(SoftPath)[2]
 DownLoadRootURL:=FilePathSplit(DownLoadURL)[1]
 ;----------------------------------------------------------------------
-
-
-;## 非必填参数
-
-;请求者自身路径
-;默认为同目录exe/ahk文件,当目录下存在多个exe/ahk时报错
-;鉴于该参数的特殊性，可以通过命令行方式传入
-;如果命令行中未传入,那么从Config获取/或者使用默认配置
-if (P3=""){
-	IniRead,SoftPath,AHKScriptUpdater.ini,Config,SoftPath,% ""
-	if (SoftPath=""){
-		SoftPath=GetAHKOrEXEFilePath()
-	}
-}
-else
-	SoftPath=P3
-
-
-;----------------------------------------------------------------------
-
 ;版本文件下载地址
 ;从配置文件读取
 IniRead,LastVersionURL,AHKScriptUpdater.ini, Config,LastVersionURL ,% ""
 ;默认:在更新文件下载地址同目录下的Version.txt文件
 ; 如果值为空字串,提取文件更新URL根目录
 if (LastVersionURL=""){
-	LastVersionURL:=DownLoadRootURL . "\Version.txt"
+	LastVersionURL:=DownLoadRootURL . "/Version.txt"
 	println(LastVersionURL)
 }
 ;如果不为空,假设用户输入了文件的下载地址,故不做任何处理
 
-}
 
 ;----------------------------------------------------------------------
 
@@ -160,7 +152,7 @@ IniRead,LocalVersion,AHKScriptUpdater.ini,Config,LocalVersion ,% ""
 ; 如果值为空字串,请求文件的根目录
 nf:="" ;用于后期检测"数字"使用,这里提前声明
 if (LocalVersion=""){
-	LocalVersion:=SoftDir . "\Version.txt"
+	LocalVersion:=SoftDir . "/Version.txt"
 	println(LocalVersion)
 }
 
@@ -171,14 +163,28 @@ else {
 
 ;如果发现确实属于数字,那么不处理,如果不是那么读取文件到变量
 
-if(LocalVersion!=nf){
+if (LocalVersion!=nf) OR (LocalVersion=""){
 ;读取版本文件到变量
 LocalVersionPath:=LocalVersion
+
+try{
 FileRead, LocalVersion, %LocalVersionPath%
+}
+catch {
+throw Exception("Failed to read the file from path:" . LocalVersionPath)
+}
+println("LocalVersionPath" LocalVersionPath)
+;读取完成之后再一次检查
+	RegExMatch(LocalVersion,"^(-?\d+)(\.\d+)?$",nf)
+if (LocalVersion!=nf) OR (LocalVersion=""){
+		throw Exception("LocalVersion File Read Failed`r`nValue IS:"  LocalVersion)
+		}
 }
 
 ;Trim掉各种空白符
 LocalVersion:=Trim(LocalVersion," `t`r`n`f`a`v`b")
+
+println("LocalVersion:" LocalVersion)
 
 ;----------------------------------------------------------------------
 
@@ -190,13 +196,11 @@ IniRead,TempFilePath,AHKScriptUpdater.ini,Config,TempFilePath,% ""
 if (TempFilePath="")
 	TempFilePath:=SoftDir . "CacheFile"
 
-
 ;----------------------------------------------------------------------
 
 ;更新说明地址(如果不填,则不在用户选择框中显示,显示对话框时会检查)
 IniRead,WikiURL,AHKScriptUpdater.ini,Config,WikiURL ,% ""
 
-;----------------------------------------------------------------------
 ;----------------------------------------------------------------------
 ;DeBug调试用
 
@@ -215,17 +219,17 @@ BuildConfig(FileName:="AHKScriptUpdater.ini"){
 	;# 如果不存在的话 那么就写入一个新的配置
 	;生成字符串
 	Pairs= ;! 这个是不能包含空行的
-	(
-		;必填参数
+(
+;必填参数
 FristParaMeter=Update
-SoftPath=
 DownLoadURL=
-		;非必填参数
+;非必填参数
+SoftPath=
 LastVersionURL=
 LocalVersion=
 TempFilePath=
 WikiURL=
-	)
+)
 	;在Config标签下,写入配置
 	IniWrite, %Pairs%,%FileName%, Config
 }
@@ -268,7 +272,7 @@ FileDelete,%TempFilePath%
 
 ;更新版本号文件(如果用户需要)
 if (UpdateVersionFile!=false){
-	VersionPath=%SoftDir%\Version.txt
+	VersionPath=%SoftDir%/Version.txt
 	FileDelete,%VersionPath%
 	FileAppend,%Latest_Version%,%VersionPath%
 }
