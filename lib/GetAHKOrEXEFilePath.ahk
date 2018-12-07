@@ -16,6 +16,7 @@
 
 # Library Version 库版本 :
 	v1.0 : GetAHKOrEXEFilePath 的第一个版本上线了 O(∩_∩)O~
+	v2.0 : 修复了由于文件自身被忽略,导致永远显示"存在多个ahk/exe文件"的问题
 
 # 依赖库 :
 	[请填写依赖库名]

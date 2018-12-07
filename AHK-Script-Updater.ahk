@@ -2,6 +2,7 @@
 SetTitleMatchMode 2
 #Hotstring EndChars  ◎
 #Hotstring NoMouse
+
 #SingleInstance force
 SetWorkingDir %A_ScriptDir%
 FileEncoding , UTF-8
@@ -81,12 +82,16 @@ else
 ;更新文件下载地址(必填)
 ;鉴于该参数的特殊性，可以通过命令行方式传入
 ;如果命令行中未传入,那么从Config获取
+	;注意,支持支持输入Repository,如果地址包含"https://github.com/"或者"http://github.com/",那么自动在尾部加入"?raw=true"
 
 if (P2="")
 IniRead,DownLoadURL,AHKScriptUpdater.ini,Config,DownLoadURL,% ""
 else
 	DownLoadURL:=P2
 
+	;转换GitHub Repository 地址为 Raw 地址
+	if instr(DownLoadURL,"https://github.com/") OR instr(DownLoadURL,"http://github.com/")
+		DownLoadURL.="?raw=true"
 ;---------------------------------------------------------------------- 
 
 ;## 检查必填参数
@@ -102,7 +107,11 @@ if (c){
 	ExitApp
 }
 ;---------------------------------------------------------------------- 
+;## 自动生成参数 DownLoadRootURL DownLoadURLLastPart
+DownLoadRootURL:=FilePathSplit(DownLoadURL)[1]
+DownLoadURLLastPart:=FilePathSplit(DownLoadURL)[2]
 
+;---------------------------------------------------------------------- 
 
 ;## 非必填参数
 
@@ -113,7 +122,18 @@ if (c){
 if (P3=""){
 	IniRead,SoftPath,AHKScriptUpdater.ini,Config,SoftPath,% ""
 	if (SoftPath=""){
+		;替换掉末尾的可能存在的"?raw=true"
+		DownLoadURLLastPart:=StrReplace(DownLoadURLLastPart,"?raw=true","")
+		;如果在根目录下存在下载地址的最后一部分(文件名),那返回值就是不为空,那么就直接采用,如果为空那么搜送
+		if (FileExist(DownLoadURLLastPart)="")
 		SoftPath:=GetAHKOrEXEFilePath()
+		else{
+	Loop, Files, %DownLoadURLLastPart%
+	{
+	SoftPath:=A_LoopFileLongPath
+	} 		
+		}		
+			
 	}
 }
 else{
@@ -123,10 +143,10 @@ else{
 println("SoftPath" . SoftPath)
 ;----------------------------------------------------------------------
 
-;## 自动生成参数
+;## 自动生成参数 SoftDir SoftName
 SoftDir:=FilePathSplit(SoftPath)[1]
 SoftName:=FilePathSplit(SoftPath)[2]
-DownLoadRootURL:=FilePathSplit(DownLoadURL)[1]
+
 ;----------------------------------------------------------------------
 ;版本文件下载地址
 ;从配置文件读取
@@ -135,7 +155,10 @@ IniRead,LastVersionURL,AHKScriptUpdater.ini, Config,LastVersionURL ,% ""
 ; 如果值为空字串,提取文件更新URL根目录
 if (LastVersionURL=""){
 	LastVersionURL:=DownLoadRootURL . "/Version.txt"
-	;~ println(LastVersionURL)
+	
+	;转换GitHub Repository 地址为 Raw 地址
+	if instr(LastVersionURL,"https://github.com/") OR instr(LastVersionURL,"http://github.com/")
+		LastVersionURL.="?raw=true"
 }
 ;如果不为空,假设用户输入了文件的下载地址,故不做任何处理
 
@@ -152,6 +175,7 @@ IniRead,LocalVersion,AHKScriptUpdater.ini,Config,LocalVersion ,% ""
 nf:="" ;用于后期检测"数字"使用,这里提前声明
 if (LocalVersion=""){
 	LocalVersion:=SoftDir . "/Version.txt"
+	nf:="Path"
 	;~ println(LocalVersion)
 }
 
@@ -162,7 +186,7 @@ else {
 
 ;如果发现确实属于数字,那么不处理,如果不是那么读取文件到变量
 
-if (LocalVersion!=nf) OR (LocalVersion=""){
+if ((LocalVersion!=nf) AND (nf="Path")) OR (LocalVersion=""){
 ;读取版本文件到变量
 LocalVersionPath:=LocalVersion
 
@@ -302,7 +326,12 @@ return true
 ;----------------------------------------------------------------------
 println(text){
 	local
-/*
+	if !(WinExist("ahk_exe SciTE.exe"))
+		return
+	oSciTE:= ComObjActive("SciTE4AHK.Application")
+	oSciTE.Output(text "`r`n")
+	return
+	/*
 刚刚接触COM组件调用相关的内容,感觉到非常困惑,网上的相关资料也不多
 比如说这个最简单的案例
 是怎么知道SciTE的COM组件名是"SciTE4AHK.Application"的呢?
@@ -312,10 +341,6 @@ println(text){
 COM组件的信息是被放在注册表中的,当然具体怎么查询还搞不太清楚,感觉这方面的网上教程比较少，好像大多数的内容都在书里
 COM组件是一种设计的规范,是对调用者透明的,好像是有一个文件里面会讲到调用方法,找到之后先阅读这个文件，然后再调用
 */
-
-	oSciTE:= ComObjActive("SciTE4AHK.Application")
-	oSciTE.Output(text "`r`n")
-	return
 }
 
 

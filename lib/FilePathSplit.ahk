@@ -38,10 +38,12 @@ FilePathSplit(FilePath){
 	FoundPos_1 := InStr(FilePath, "\" ,false,0,1)
 	;找到最后一个斜杠的位置
 	FoundPos:=(FoundPos_0>=FoundPos_1)?FoundPos_0:FoundPos_1
-	;提取出调用者本身的名字(前面带着斜杠),并且对可能存在的反斜杠转义
-	FileName:=StrReplace(SubStr(FilePath,FoundPos),"\","\\")
+	FileName:=SubStr(FilePath,FoundPos)
 	;使用正则替换掉调用者本身(使用正则仅仅替换掉最后一个被匹配的)
-	FileDir:=RegExReplace(FilePath,"(" FileName ")$" )
+		;为了防止FileName对正则本身造成干扰，需要先对其进行转义
+		FileNameInRegEx:=RegexEscape(FileName)
+	FileDir:=RegExReplace(FilePath,"(" FileNameInRegEx ")$" )
+	MsgBox,% FileDir
 	;去除正反斜杠得到真正的FileName
 	FileName:=StrReplace((FileName:=StrReplace(FileName,"\","")),"/","")
 	return [FileDir,FileName]
