@@ -6,7 +6,7 @@ SetTitleMatchMode 2
 SetWorkingDir %A_ScriptDir%
 FileEncoding , UTF-8
 
-#Include %A_ScriptDir%\TaskDialog.ahk ;导入用户更新选择器(Gui)
+#Include %A_ScriptDir%\lib\TaskDialog.ahk ;导入用户更新选择器(Gui)
 #Include %A_ScriptDir%\lib\DownloadFileWithProgressBar.ahk ;导入下载器(Gui)
 #Include %A_ScriptDir%\lib\Wait.ahk ;导入等待时的假进度条(Gui)
 ;----------------------------------------------------------------------
