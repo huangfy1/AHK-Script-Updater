@@ -62,7 +62,6 @@ if !(InStr(iniFile.Read(),"[Config]")){
 
 } ;config格式检查流程完毕,检查完成之后确保AHKScriptUpdater.ini存在,并且含有config段名。(如必选命令行参数已存在,则跳过检查)
 
-
 ;---------------------------------------------------------------------- 
 
 ;# 读取配置
@@ -136,7 +135,7 @@ IniRead,LastVersionURL,AHKScriptUpdater.ini, Config,LastVersionURL ,% ""
 ; 如果值为空字串,提取文件更新URL根目录
 if (LastVersionURL=""){
 	LastVersionURL:=DownLoadRootURL . "/Version.txt"
-	println(LastVersionURL)
+	;~ println(LastVersionURL)
 }
 ;如果不为空,假设用户输入了文件的下载地址,故不做任何处理
 
@@ -153,7 +152,7 @@ IniRead,LocalVersion,AHKScriptUpdater.ini,Config,LocalVersion ,% ""
 nf:="" ;用于后期检测"数字"使用,这里提前声明
 if (LocalVersion=""){
 	LocalVersion:=SoftDir . "/Version.txt"
-	println(LocalVersion)
+	;~ println(LocalVersion)
 }
 
 ;非默认:检查是否为"版本号"(由多个数字和一个.组成的字符串)
@@ -202,9 +201,9 @@ if (TempFilePath="")
 IniRead,WikiURL,AHKScriptUpdater.ini,Config,WikiURL ,% ""
 
 ;----------------------------------------------------------------------
-;DeBug调试用
+;调试
 
-println(LocalVersion),println(LastVersionURL),println(DownloadURL),println(WikiURL)
+;~ println(LocalVersion),println(LastVersionURL),println(DownloadURL),println(WikiURL)
 
 ;----------------------------------------------------------------------
 

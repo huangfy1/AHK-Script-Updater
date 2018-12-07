@@ -126,7 +126,7 @@ CheckUpdate(LocalVersion,LastVersionURL,DownloadURL,D_Update:="null",WikiURL="")
 	}
 	; 如果已经是最新版
 	else if ( LocalVersion >= LatestVersion ){
-		iButtonID := TaskDialog("", "升级||本地软件已是最新版."
+		iButtonID := TaskDialog("", "升级|| 当前版本已经是最新版本"
 		. "`n||本地版本 v" LocalVersion "  最新版本 v" LatestVersion, "退出 Exit", 0x10, "GREEN")
 
 		; custom button 1 - set to close
