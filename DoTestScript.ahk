@@ -13,14 +13,8 @@ SetTitleMatchMode 2 ; # 设置标题查找模式
 ;# 更改脚本的工作目录到"脚本所在目录的绝对路径"
 SetWorkingDir %A_ScriptDir%
 FileEncoding , UTF-8
-
 SetFormat,Float,0.2 ; # 设置数值转字符串的字符串格式
 SendMode Input ;#Input: 让 Send, SendRaw, Click 和 MouseMove/Click/Drag 切换到 SendInput 方法.
-
-
-Menu, tray, Add ,% "更新", ttt
-
-
 cu=%1%
 if (cu="UpdateFinished")
 msgbox,更新成功
@@ -29,11 +23,6 @@ return ;# 自动执行段结束
 /*
 # AHK标准表头结束
 */
-
-ttt:
-Run,%A_ScriptDir%/AHK-Script-Updater.ahk "Update" "https://github.com/Oilj/OnlyTest/blob/master/DoTestScript.ahk"
-ExitApp
-return
 
 ^l::
 MsgBox,1,11月28日_06时46分,1

@@ -43,7 +43,7 @@ FilePathSplit(FilePath){
 		;为了防止FileName对正则本身造成干扰，需要先对其进行转义
 		FileNameInRegEx:=RegexEscape(FileName)
 	FileDir:=RegExReplace(FilePath,"(" FileNameInRegEx ")$" )
-	;~ MsgBox,% FileDir
+	MsgBox,% FileDir
 	;去除正反斜杠得到真正的FileName
 	FileName:=StrReplace((FileName:=StrReplace(FileName,"\","")),"/","")
 	return [FileDir,FileName]
