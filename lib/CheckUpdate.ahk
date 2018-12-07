@@ -3,6 +3,7 @@
 
 # Specification(Default ParaMeters)	功能介绍(默认参数下) :
 检查更新,并且弹出对话框询问用户的下一步操作
+若用户决定自动升级，则返回LatestVersion(最新版本号)
 
 # ParaMetersList	参数列表 :
 LocalVersion 当前本地版本号(纯数字字符串)
@@ -106,13 +107,13 @@ CheckUpdate(LocalVersion,LastVersionURL,DownloadURL,D_Update:="null",WikiURL="")
 			else{
 				;运行自动更新程序(函数对象)
 				%D_Update%()
-				return true
+				return LatestVersion
 			}
 		}
 
 		if ( iButtonID == 1002 ){
 			Run, DownloadURL
-			return false
+			ExitApp
 		}
 
 		else if ( iButtonID == 1004+wiki ){
@@ -121,7 +122,7 @@ CheckUpdate(LocalVersion,LastVersionURL,DownloadURL,D_Update:="null",WikiURL="")
 
 		else if ( iButtonID == 1003 ){
 			Run, WikiURL
-			return false
+			ExitApp
 		}
 	}
 	; 如果已经是最新版

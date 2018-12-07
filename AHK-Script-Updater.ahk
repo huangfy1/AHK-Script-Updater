@@ -251,7 +251,8 @@ Main_Updater(DownLoadURL,SoftPath,TempFilePath:="",EnableCheckUpdate:=true,Enabl
 	;检查是否"检查更新"
 	if(EnableCheckUpdate){
 	;如果检查更新的话，那么就调用CheckUpdate方法,最后让用户根据自己的情况选择更新方法
-	CheckUpdate(LocalVersion,LastVersionURL,DownloadURL,D_Update,WikiURL)
+	;如果用户决定自动升级，那我们就拿到版本号
+	LatestVersion:=CheckUpdate(LocalVersion,LastVersionURL,DownloadURL,D_Update,WikiURL)
 }
 ;如果不检查更新的话，那么就直接下载即可
 else
@@ -271,9 +272,17 @@ FileDelete,%TempFilePath%
 
 ;更新版本号文件(如果用户需要)
 if (UpdateVersionFile!=false){
-	VersionPath=%SoftDir%/Version.txt
+	;如果本地更新文件地址存在,那么就使用,如果不存在，那么就生成在请求文件的根目录下
+	if(LocalVersionPath!="")
+	VersionPath:=LocalVersionPath
+	else
+	VersionPath:=SoftDir . "\Version.txt"
 	FileDelete,%VersionPath%
-	FileAppend,%Latest_Version%,%VersionPath%
+	;检查最新版本号是否为空,若并非为空，则写入
+	if (LatestVersion="")
+		throw Exception("Programme Cannot write to the local version file because did not get the latest version`r`nLatestVersion is null string")
+	else
+	FileAppend,%LatestVersion%,%VersionPath%
 }
 
 ;运行新文件
